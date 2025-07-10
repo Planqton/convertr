@@ -25,8 +25,12 @@ def create_link(target_dir: str, script_path: str) -> None:
         print(f"⚠️  Konnte Verknüpfung nicht erstellen: {e}")
 
 
-def choose_directory(start_dir: str | None = None) -> str:
-    """Simple interactive browser to choose a directory."""
+def choose_directory(start_dir: str | None = None, allow_create: bool = False) -> str:
+    """Simple interactive browser to choose a directory.
+
+    If ``allow_create`` is ``True``, the user can create a new folder in the
+    currently browsed directory.
+    """
     current = os.path.abspath(start_dir or os.getcwd())
     while True:
         subdirs = sorted(
@@ -37,7 +41,10 @@ def choose_directory(start_dir: str | None = None) -> str:
         choices = [
             questionary.Choice("[Diesen Ordner verwenden]", "__select__"),
             questionary.Choice("[..]", "__up__"),
-        ] + [questionary.Choice(d + os.sep, d) for d in subdirs]
+        ]
+        if allow_create:
+            choices.append(questionary.Choice("[Neuen Ordner erstellen]", "__new__"))
+        choices += [questionary.Choice(d + os.sep, d) for d in subdirs]
 
         selection = questionary.select(
             f"Ordner wählen: {current}", choices=choices
@@ -48,6 +55,15 @@ def choose_directory(start_dir: str | None = None) -> str:
         if selection == "__up__":
             parent = os.path.dirname(current)
             current = parent if parent else current
+        elif selection == "__new__" and allow_create:
+            name = questionary.text("Neuen Ordnernamen eingeben:").ask().strip()
+            if name:
+                new_path = os.path.join(current, name)
+                try:
+                    os.makedirs(new_path, exist_ok=True)
+                    current = new_path
+                except OSError as e:
+                    print(f"⚠️  Konnte Ordner nicht erstellen: {e}")
         else:
             current = os.path.join(current, selection)
 
@@ -145,7 +161,7 @@ def select_files_with_segments(files):
 
 if __name__ == "__main__":
     input_directory = choose_directory()
-    output_directory = os.path.join(input_directory, "mp3")
+    output_directory = choose_directory(start_dir=input_directory, allow_create=True)
     os.makedirs(output_directory, exist_ok=True)
     create_link(input_directory, __file__)
 
@@ -176,7 +192,7 @@ if __name__ == "__main__":
             command += ["-to", entry["end"]]
         command += ["-vn", "-acodec", "libmp3lame", "-q:a", "2", output_path]
 
-        print(f"🎵 Konvertiere: {entry['file']} → mp3/{output_filename}")
+        print(f"🎵 Konvertiere: {entry['file']} → {os.path.join(output_directory, output_filename)}")
         subprocess.run(command)
 
     print(f"\n✅ Fertig. MP3-Dateien gespeichert in: {output_directory}")
