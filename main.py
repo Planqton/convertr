@@ -10,6 +10,18 @@ from prompt_toolkit.key_binding import KeyBindings
 import re
 
 
+def create_link(target_dir: str, script_path: str) -> None:
+    """Create a symlink to this script in the selected directory."""
+    link_name = os.path.join(target_dir, os.path.basename(script_path))
+    if os.path.exists(link_name):
+        return
+    try:
+        os.symlink(os.path.abspath(script_path), link_name)
+        print(f"🔗 Verknüpfung erstellt: {link_name}")
+    except OSError as e:
+        print(f"⚠️  Konnte Verknüpfung nicht erstellen: {e}")
+
+
 def choose_directory(start_dir: str | None = None) -> str:
     """Simple interactive browser to choose a directory."""
     current = os.path.abspath(start_dir or os.getcwd())
@@ -132,6 +144,7 @@ if __name__ == "__main__":
     input_directory = choose_directory()
     output_directory = os.path.join(input_directory, "mp3")
     os.makedirs(output_directory, exist_ok=True)
+    create_link(input_directory, __file__)
 
     mkv_files = [f for f in os.listdir(input_directory) if f.lower().endswith(".mkv")]
     if not mkv_files:
