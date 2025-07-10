@@ -2,7 +2,7 @@ import os
 import subprocess
 import questionary
 from prompt_toolkit import Application
-from prompt_toolkit.application import run_in_terminal
+from prompt_toolkit.application.run_in_terminal import in_terminal
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.layout.controls import FormattedTextControl
@@ -65,17 +65,19 @@ def select_files_with_segments(files):
 
     @bindings.add("s")
     def _set_time(event):
-        def ask():
-            start = questionary.text("Startzeit (leerlassen für Anfang):").ask().strip()
-            end = questionary.text("Endzeit (leerlassen für Ende):").ask().strip()
-            entries[index]["start"] = start or None
-            entries[index]["end"] = end or None
-
-        async def task():
-            await run_in_terminal(ask)
+        async def ask():
+            async with in_terminal():
+                start = await questionary.text(
+                    "Startzeit (leerlassen für Anfang):"
+                ).ask_async()
+                end = await questionary.text(
+                    "Endzeit (leerlassen für Ende):"
+                ).ask_async()
+            entries[index]["start"] = start.strip() or None
+            entries[index]["end"] = end.strip() or None
             event.app.invalidate()
 
-        event.app.create_background_task(task())
+        event.app.create_background_task(ask())
 
     @bindings.add("enter")
     def _done(event):
