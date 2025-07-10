@@ -7,15 +7,29 @@ from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.key_binding import KeyBindings
+import re
 
 
 def select_files_with_segments(files):
     """Interactive selection of files with optional time ranges."""
+    time_pattern = re.compile(r"^(\d{1,2}:\d{2}:\d{2}|\d{1,2}:\d{2}|\d+)$")
     entries = [
         {"file": f, "selected": False, "start": None, "end": None}
         for f in files
     ]
     index = 0
+
+    def ask_time(prompt):
+        async def _prompt():
+            return await questionary.text(
+                prompt,
+                validate=lambda t: (
+                    not t.strip() or time_pattern.match(t.strip())
+                    or "Format: HH:MM:SS or seconds"
+                ),
+            ).ask_async()
+
+        return _prompt()
 
     def format_entry(e):
         mark = "[x]" if e["selected"] else "[ ]"
@@ -25,6 +39,7 @@ def select_files_with_segments(files):
     def get_text():
         lines = [
             "Use ↑↓ to navigate, Space to select, 's' to set time, 'a' to select all, 'i' to invert, Enter to convert",
+            "Times may be given in seconds or as HH:MM:SS",
             "",
         ]
         for i, e in enumerate(entries):
@@ -67,12 +82,12 @@ def select_files_with_segments(files):
     def _set_time(event):
         async def ask():
             async with in_terminal():
-                start = await questionary.text(
-                    "Startzeit (leerlassen für Anfang):"
-                ).ask_async()
-                end = await questionary.text(
-                    "Endzeit (leerlassen für Ende):"
-                ).ask_async()
+                start = await ask_time(
+                    "Startzeit (Sekunden oder HH:MM:SS, leer = Anfang):"
+                )
+                end = await ask_time(
+                    "Endzeit (Sekunden oder HH:MM:SS, leer = Ende):"
+                )
             entries[index]["start"] = start.strip() or None
             entries[index]["end"] = end.strip() or None
             event.app.invalidate()
