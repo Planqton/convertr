@@ -9,6 +9,9 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.key_binding import KeyBindings
 import re
 
+# Supported video file extensions
+VIDEO_EXTS = (".mkv", ".avi", ".mp4")
+
 
 def create_link(target_dir: str, script_path: str) -> None:
     """Create a symlink to this script in the selected directory."""
@@ -146,12 +149,16 @@ if __name__ == "__main__":
     os.makedirs(output_directory, exist_ok=True)
     create_link(input_directory, __file__)
 
-    mkv_files = [f for f in os.listdir(input_directory) if f.lower().endswith(".mkv")]
-    if not mkv_files:
-        print("❌ Keine .mkv-Dateien gefunden.")
+    video_files = [
+        f
+        for f in os.listdir(input_directory)
+        if f.lower().endswith(VIDEO_EXTS)
+    ]
+    if not video_files:
+        print("❌ Keine passenden Videodateien (.mkv, .avi, .mp4) gefunden.")
         raise SystemExit
 
-    selections = select_files_with_segments(mkv_files)
+    selections = select_files_with_segments(video_files)
     chosen = [s for s in selections if s["selected"]]
     if not chosen:
         print("❌ Keine Dateien ausgewählt. Abbruch.")
