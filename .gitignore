@@ -1,0 +1,5 @@
+# MKV-Dateien ignorieren
+*.mkv
+
+# MP3-Dateien ignorieren
+*.mp3
