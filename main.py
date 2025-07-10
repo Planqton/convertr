@@ -10,6 +10,33 @@ from prompt_toolkit.key_binding import KeyBindings
 import re
 
 
+def choose_directory(start_dir: str | None = None) -> str:
+    """Simple interactive browser to choose a directory."""
+    current = os.path.abspath(start_dir or os.getcwd())
+    while True:
+        subdirs = sorted(
+            d
+            for d in os.listdir(current)
+            if os.path.isdir(os.path.join(current, d))
+        )
+        choices = [
+            questionary.Choice("[Diesen Ordner verwenden]", "__select__"),
+            questionary.Choice("[..]", "__up__"),
+        ] + [questionary.Choice(d + os.sep, d) for d in subdirs]
+
+        selection = questionary.select(
+            f"Ordner wählen: {current}", choices=choices
+        ).ask()
+
+        if selection == "__select__":
+            return current
+        if selection == "__up__":
+            parent = os.path.dirname(current)
+            current = parent if parent else current
+        else:
+            current = os.path.join(current, selection)
+
+
 def select_files_with_segments(files):
     """Interactive selection of files with optional time ranges."""
     time_pattern = re.compile(r"^(\d{1,2}:\d{2}:\d{2}|\d{1,2}:\d{2}|\d+)$")
@@ -102,7 +129,7 @@ def select_files_with_segments(files):
 
 
 if __name__ == "__main__":
-    input_directory = os.getcwd()
+    input_directory = choose_directory()
     output_directory = os.path.join(input_directory, "mp3")
     os.makedirs(output_directory, exist_ok=True)
 
@@ -132,4 +159,4 @@ if __name__ == "__main__":
         print(f"🎵 Konvertiere: {entry['file']} → mp3/{output_filename}")
         subprocess.run(command)
 
-    print("\n✅ Fertig. MP3-Dateien gespeichert in: ./mp3/")
+    print(f"\n✅ Fertig. MP3-Dateien gespeichert in: {output_directory}")
