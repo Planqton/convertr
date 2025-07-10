@@ -19,17 +19,14 @@ def select_files_with_segments(files):
     ]
     index = 0
 
-    def ask_time(prompt):
-        async def _prompt():
-            return await questionary.text(
-                prompt,
-                validate=lambda t: (
-                    not t.strip() or time_pattern.match(t.strip())
-                    or "Format: HH:MM:SS or seconds"
-                ),
-            ).ask_async()
-
-        return _prompt()
+    async def ask_time(prompt: str) -> str:
+        """Prompt for a time value and validate the format."""
+        return await questionary.text(
+            prompt,
+            validate=lambda t: True
+            if (not t.strip() or time_pattern.match(t.strip()))
+            else "Format: HH:MM:SS or seconds",
+        ).ask_async()
 
     def format_entry(e):
         mark = "[x]" if e["selected"] else "[ ]"
